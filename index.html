@@ -184,7 +184,8 @@
       color: var(--malibu);
       flex-shrink: 0;
     }
-    .team.lost { opacity: 0.28; cursor: default; }
+    .team.lost { opacity: 0.32; cursor: pointer; }
+    @media (hover: hover) { .team.lost:hover { opacity: 0.7; color: var(--white); } }
     .team.tbd { color: rgba(255,255,255,0.18); cursor: default; font-style: italic; }
     .team[disabled] { cursor: default; }
 
@@ -475,7 +476,7 @@
     if (!team) return `<button class="team tbd" disabled>⚪ TBD</button>`;
     const won  = winner === team;
     const lost = winner && !won;
-    const lock = submitted || lost;
+    const lock = submitted;  // only lock after submitting — losers stay clickable so picks can change
     const cls  = `team${won ? ' won' : ''}${lost ? ' lost' : ''}`;
     const dis  = lock ? ' disabled' : '';
     const cb   = lock ? '' : ` onclick="pick(${r},${m},${slot})"`;
