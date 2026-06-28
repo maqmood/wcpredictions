@@ -423,14 +423,18 @@
     submitted = false;
   }
 
-  function pick(r, m, team) {
+  function pick(r, m, slot) {
     if (submitted) return;
+    const team = slot === 1 ? S[r][m].t1 : S[r][m].t2;
+    if (!team) return;                 // can't pick an empty/TBD slot
+    if (S[r][m].w === team) return;     // already the winner, no-op
+
     S[r][m].w = team;
     if (r < 4) {
-      const nm   = Math.floor(m / 2);
-      const slot = m % 2 === 0 ? 't1' : 't2';
-      clearDown(r + 1, nm, slot);
-      S[r + 1][nm][slot] = team;
+      const nm        = Math.floor(m / 2);
+      const childSlot = m % 2 === 0 ? 't1' : 't2';
+      clearDown(r + 1, nm, childSlot);
+      S[r + 1][nm][childSlot] = team;
     }
     render();
     refreshProgress();
@@ -467,14 +471,14 @@
 
   // ── Render ───────────────────────────────────────────────────
 
-  function teamBtn(r, m, team, winner) {
+  function teamBtn(r, m, slot, team, winner) {
     if (!team) return `<button class="team tbd" disabled>⚪ TBD</button>`;
     const won  = winner === team;
     const lost = winner && !won;
     const lock = submitted || lost;
     const cls  = `team${won ? ' won' : ''}${lost ? ' lost' : ''}`;
     const dis  = lock ? ' disabled' : '';
-    const cb   = lock ? '' : ` onclick="pick(${r},${m},${JSON.stringify(team)})"`;
+    const cb   = lock ? '' : ` onclick="pick(${r},${m},${slot})"`;
     return `<button class="${cls}"${dis}${cb}>${team}</button>`;
   }
 
@@ -496,8 +500,8 @@
 
       if (r === 4) {
         html += `<div class="matches"><div class="card">`;
-        html += teamBtn(4, 0, S[4][0].t1, S[4][0].w);
-        html += teamBtn(4, 0, S[4][0].t2, S[4][0].w);
+        html += teamBtn(4, 0, 1, S[4][0].t1, S[4][0].w);
+        html += teamBtn(4, 0, 2, S[4][0].t2, S[4][0].w);
         html += `</div></div>`;
 
         const champ = S[4][0].w;
@@ -519,8 +523,8 @@
         html += `<div class="matches">`;
         round.forEach((match, mi) => {
           html += `<div class="card">`;
-          html += teamBtn(r, mi, match.t1, match.w);
-          html += teamBtn(r, mi, match.t2, match.w);
+          html += teamBtn(r, mi, 1, match.t1, match.w);
+          html += teamBtn(r, mi, 2, match.t2, match.w);
           html += `</div>`;
         });
         html += `</div>`;
