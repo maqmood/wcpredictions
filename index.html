@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WC2026 Knockout Predictor</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --malibu:   #0084d1;
+      --aquarius: #3fa9f5;
+      --dawn:     #cccccc;
+      --white:    #ffffff;
+      --navy:     #0a1628;
+      --navy2:    #0d1e35;
+      --gold:     #ffd700;
+      --glow:     0 0 15px rgba(0,132,209,0.35);
+      --glow-sm:  0 0 10px rgba(0,132,209,0.2);
+      --ease:     all 0.25s cubic-bezier(0.4,0,0.2,1);
+    }
+
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      background: var(--navy);
+      color: var(--white);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpolygon points='28,2 54,16 54,48 28,62 2,48 2,16' fill='none' stroke='%230084d1' stroke-opacity='0.06' stroke-width='1'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 1.5rem 1rem 4rem;
+    }
+
+    /* ── Header ── */
+    header { text-align: center; margin-bottom: 1.75rem; }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+    }
+    h1 em { color: var(--malibu); font-style: normal; }
+
+    .subtitle {
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.35);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-top: 0.2rem;
+    }
+
+    .name-wrap { margin-top: 1rem; }
+    .field-label {
+      display: block;
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--malibu);
+      margin-bottom: 0.35rem;
+    }
+
+    input[type=text] {
+      width: 100%;
+      background: rgba(0,132,209,0.08);
+      border: 1px solid rgba(0,132,209,0.35);
+      border-radius: 8px;
+      color: var(--white);
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 500;
+      padding: 0.65rem 1rem;
+      outline: none;
+      transition: var(--ease);
+    }
+    input[type=text]:focus { border-color: var(--aquarius); box-shadow: var(--glow); }
+    input[type=text]::placeholder { color: rgba(255,255,255,0.2); }
+
+    /* Progress bar */
+    .prog-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-top: 1rem;
+    }
+    .prog-label { font-size: 0.75rem; color: var(--dawn); white-space: nowrap; }
+    .bar { flex: 1; height: 5px; background: rgba(255,255,255,0.09); border-radius: 3px; overflow: hidden; }
+    .fill { height: 100%; background: linear-gradient(90deg, var(--malibu), var(--aquarius)); border-radius: 3px; width: 0%; transition: var(--ease); }
+
+    /* ── Rounds ── */
+    .rounds { display: flex; flex-direction: column; gap: 1.5rem; margin-top: 1.75rem; }
+
+    .round-section {}
+
+    .round-header {
+      display: flex;
+      align-items: baseline;
+      gap: 0.6rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .round-num {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: rgba(0,132,209,0.3);
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      min-width: 2.2rem;
+    }
+
+    .round-info {}
+    .round-name {
+      font-size: 0.82rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--white);
+      line-height: 1;
+    }
+    .round-count {
+      font-size: 0.68rem;
+      color: rgba(255,255,255,0.35);
+      margin-top: 0.15rem;
+    }
+
+    .matches { display: flex; flex-direction: column; gap: 0.55rem; }
+
+    /* Matchup card */
+    .card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(0,132,209,0.2);
+      border-radius: 10px;
+      overflow: hidden;
+      transition: var(--ease);
+    }
+    .card:has(.team:not(.tbd):hover) {
+      border-color: rgba(0,132,209,0.5);
+    }
+
+    .team {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.65);
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      transition: var(--ease);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .team + .team { border-top: 1px solid rgba(0,132,209,0.13); }
+
+    .team:active:not([disabled]):not(.tbd) {
+      background: rgba(0,132,209,0.22);
+    }
+    @media (hover: hover) {
+      .team:hover:not([disabled]):not(.tbd) {
+        background: rgba(0,132,209,0.15);
+        color: var(--white);
+      }
+    }
+
+    .team.won {
+      background: rgba(0,132,209,0.2);
+      color: var(--aquarius);
+      font-weight: 700;
+    }
+    .team.won::after {
+      content: '✓';
+      margin-left: auto;
+      font-size: 0.8rem;
+      color: var(--malibu);
+      flex-shrink: 0;
+    }
+    .team.lost { opacity: 0.28; cursor: default; }
+    .team.tbd { color: rgba(255,255,255,0.18); cursor: default; font-style: italic; }
+    .team[disabled] { cursor: default; }
+
+    /* ── Third place ── */
+    .third-section {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .third-lbl {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--dawn);
+      margin-bottom: 0.5rem;
+    }
+    .third-teams {
+      font-size: 0.88rem;
+      color: var(--dawn);
+      line-height: 1.8;
+    }
+    .vs { color: rgba(255,255,255,0.25); font-size: 0.72rem; display: block; }
+
+    /* Champion */
+    .champ-section {
+      background: rgba(255,215,0,0.07);
+      border: 1px solid rgba(255,215,0,0.3);
+      border-radius: 10px;
+      padding: 1.1rem;
+      text-align: center;
+    }
+    .champ-lbl {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.4rem;
+    }
+    .champ-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    /* ── Actions ── */
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin-top: 1.75rem;
+    }
+    .btn {
+      width: 100%;
+      padding: 0.85rem 1.4rem;
+      border-radius: 10px;
+      border: none;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: var(--ease);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-primary { background: var(--malibu); color: #fff; }
+    .btn-primary:active { background: var(--aquarius); box-shadow: var(--glow); }
+    @media (hover: hover) {
+      .btn-primary:hover { background: var(--aquarius); box-shadow: var(--glow); }
+    }
+    .btn-ghost {
+      background: rgba(255,255,255,0.06);
+      color: var(--dawn);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+    .btn-ghost:active { background: rgba(255,255,255,0.12); color: var(--white); }
+    @media (hover: hover) {
+      .btn-ghost:hover { background: rgba(255,255,255,0.12); color: var(--white); }
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      color: rgba(255,255,255,0.28);
+      font-size: 0.75rem;
+      line-height: 1.8;
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(0,200,100,0.12);
+      color: #00c864;
+      border: 1px solid rgba(0,200,100,0.4);
+      border-radius: 20px;
+      padding: 0.2rem 0.8rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+    }
+
+    /* Divider between rounds */
+    .round-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0,132,209,0.15), transparent);
+    }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1>SBS MAJLIS <em>WC26</em> PREDICTOR</h1>
+    <div class="subtitle">World Cup Knockout Bracket</div>
+    <div class="name-wrap">
+      <label class="field-label" for="nameInput">Your Name</label>
+      <input type="text" id="nameInput" placeholder="Enter your name" maxlength="30" autocomplete="off">
+    </div>
+    <div class="prog-wrap">
+      <span class="prog-label" id="progText">0 of 32 picked</span>
+      <div class="bar"><div class="fill" id="progFill"></div></div>
+      <span class="prog-label" id="progPct">0%</span>
+    </div>
+  </header>
+
+  <div class="rounds" id="rounds"></div>
+
+  <div class="actions">
+    <button class="btn btn-primary" onclick="submitBracket()">📨 Submit my bracket</button>
+    <button class="btn btn-ghost" onclick="resetAll()">↺ Reset all picks</button>
+  </div>
+
+  <footer>
+    AKAS Meelas · World Cup 2026 🇨🇦🇺🇸🇲🇽<br>
+    <div class="badge" id="badge" style="display:none">✅ Bracket complete!</div>
+  </footer>
+
+</div>
+<script>
+  const TEAMS = [
+    ['🇿🇦 South Africa',  '🇨🇦 Canada'],
+    ['🇳🇱 Netherlands',   '🇲🇦 Morocco'],
+    ['🇩🇪 Germany',       '🇵🇾 Paraguay'],
+    ['🇫🇷 France',        '🇸🇪 Sweden'],
+    ['🇧🇪 Belgium',       '🇸🇳 Senegal'],
+    ['🇺🇸 United States', '🇧🇦 Bosnia'],
+    ['🇪🇸 Spain',         '🇦🇹 Austria'],
+    ['🇵🇹 Portugal',      '🇭🇷 Croatia'],
+    ['🇧🇷 Brazil',        '🇯🇵 Japan'],
+    ['🇨🇮 Ivory Coast',   '🇳🇴 Norway'],
+    ['🇲🇽 Mexico',        '🇪🇨 Ecuador'],
+    ['🏴󠁧󠁢󠁥󠁮󠁧󠁿 England',      '🇨🇩 DR Congo'],
+    ['🇨🇭 Switzerland',   '🇩🇿 Algeria'],
+    ['🇨🇴 Colombia',      '🇬🇭 Ghana'],
+    ['🇦🇺 Australia',     '🇪🇬 Egypt'],
+    ['🇦🇷 Argentina',     '🇨🇻 Cape Verde'],
+  ];
+
+  const ROUND_NAMES = ['Round of 32', 'Round of 16', 'Quarterfinals', 'Semifinals', 'Final'];
+  const ROUND_SIZES = [16, 8, 4, 2, 1];
+
+  // S[round][match] = { t1, t2, w }
+  let S = [];
+
+  function init() {
+    S = ROUND_SIZES.map((n, r) =>
+      Array.from({length: n}, (_, m) => ({
+        t1: r === 0 ? TEAMS[m][0] : null,
+        t2: r === 0 ? TEAMS[m][1] : null,
+        w: null,
+      }))
+    );
+  }
+
+  function pick(r, m, team) {
+    S[r][m].w = team;
+    if (r < 4) {
+      const nm   = Math.floor(m / 2);
+      const slot = m % 2 === 0 ? 't1' : 't2';
+      clearDown(r + 1, nm, slot);
+      S[r + 1][nm][slot] = team;
+    }
+    render();
+    refreshProgress();
+  }
+
+  function clearDown(r, m, slot) {
+    if (r >= 5) return;
+    const old = S[r][m][slot];
+    S[r][m][slot] = null;
+    if (S[r][m].w === old) {
+      S[r][m].w = null;
+      if (r < 4) clearDown(r + 1, Math.floor(m / 2), m % 2 === 0 ? 't1' : 't2');
+    }
+  }
+
+  function sfLosers() {
+    const sf = S[3];
+    const l1 = sf[0].w ? (sf[0].t1 === sf[0].w ? sf[0].t2 : sf[0].t1) : null;
+    const l2 = sf[1].w ? (sf[1].t1 === sf[1].w ? sf[1].t2 : sf[1].t1) : null;
+    return [l1, l2];
+  }
+
+  function refreshProgress() {
+    let n = 0;
+    S.forEach(r => r.forEach(m => { if (m.w) n++; }));
+    const pct = Math.round(n / 32 * 100);
+    document.getElementById('progText').textContent = `${n} of 32 picked`;
+    document.getElementById('progFill').style.width  = pct + '%';
+    document.getElementById('progPct').textContent   = pct + '%';
+    document.getElementById('badge').style.display   = n === 32 ? 'inline-block' : 'none';
+  }
+
+  function teamBtn(r, m, team, winner) {
+    if (!team) return `<button class="team tbd" disabled>⚪ TBD</button>`;
+    const won  = winner === team;
+    const lost = winner && !won;
+    const cls  = `team${won ? ' won' : ''}${lost ? ' lost' : ''}`;
+    const dis  = lost ? ' disabled' : '';
+    return `<button class="${cls}"${dis} onclick="pick(${r},${m},${JSON.stringify(team)})">${team}</button>`;
+  }
+
+  function render() {
+    let html = '';
+
+    S.forEach((round, r) => {
+      const done  = round.filter(m => m.w).length;
+      const total = round.length;
+      const num   = String(r + 1).padStart(2, '0');
+
+      if (r > 0) html += `<div class="round-divider"></div>`;
+
+      html += `<div class="round-section">`;
+      html += `<div class="round-header">`;
+      html += `<span class="round-num">${num}</span>`;
+      html += `<div class="round-info">`;
+      html += `<div class="round-name">${ROUND_NAMES[r]}</div>`;
+      html += `<div class="round-count">${done}/${total} matches picked</div>`;
+      html += `</div></div>`;
+
+      if (r === 4) {
+        // Final — show as champion card
+        const champ = S[4][0].w;
+        html += `<div class="matches">`;
+        html += `<div class="card">`;
+        html += teamBtn(4, 0, S[4][0].t1, S[4][0].w);
+        html += teamBtn(4, 0, S[4][0].t2, S[4][0].w);
+        html += `</div></div>`;
+
+        if (champ) {
+          html += `<div class="champ-section" style="margin-top:0.75rem">`;
+          html += `<div class="champ-lbl">🏆 Champion</div>`;
+          html += `<div class="champ-name">${champ}</div>`;
+          html += `</div>`;
+        }
+
+        // Third-place
+        const [l1, l2] = sfLosers();
+        if (l1 || l2) {
+          html += `<div class="third-section" style="margin-top:0.75rem">`;
+          html += `<div class="third-lbl">🥉 Third-Place Play-off</div>`;
+          html += `<div class="third-teams">`;
+          html += `${l1 || '⚪ TBD'}<span class="vs">vs</span>${l2 || '⚪ TBD'}`;
+          html += `</div></div>`;
+        }
+
+      } else {
+        html += `<div class="matches">`;
+        round.forEach((match, mi) => {
+          html += `<div class="card">`;
+          html += teamBtn(r, mi, match.t1, match.w);
+          html += teamBtn(r, mi, match.t2, match.w);
+          html += `</div>`;
+        });
+        html += `</div>`;
+      }
+
+      html += `</div>`;
+    });
+
+    document.getElementById('rounds').innerHTML = html;
+  }
+
+  function submitBracket() {
+    const name  = document.getElementById('nameInput').value.trim() || 'Anonymous';
+    const champ = S[4][0].w;
+    if (!champ) { alert('Pick your champion before submitting!'); return; }
+    alert(`📨 ${name}'s bracket submitted!\n🏆 Champion: ${champ}`);
+  }
+
+  function resetAll() {
+    if (!confirm('Reset all picks?')) return;
+    init();
+    render();
+    refreshProgress();
+  }
+
+  init();
+  render();
+</script>
+</body>
+</html>
