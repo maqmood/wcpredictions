@@ -209,14 +209,7 @@
     .champ-name { font-size: 1rem; font-weight: 700; color: var(--gold); }
 
     /* ── Third place ── */
-    .third-section {
-      background: rgba(255,255,255,0.03);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px;
-      padding: 1rem;
-      text-align: center;
-      margin-top: 0.75rem;
-    }
+    .third-block { margin-top: 0.9rem; }
     .third-lbl {
       font-size: 0.62rem;
       font-weight: 700;
@@ -225,8 +218,6 @@
       color: var(--dawn);
       margin-bottom: 0.5rem;
     }
-    .third-teams { font-size: 0.88rem; color: var(--dawn); line-height: 1.8; }
-    .vs { color: rgba(255,255,255,0.25); font-size: 0.72rem; display: block; }
 
     .round-divider {
       height: 1px;
@@ -409,6 +400,7 @@
   const ROUND_SIZES = [16, 8, 4, 2, 1];
 
   let S = [];
+  let third = { w: null };   // third-place play-off winner (the 32nd pick)
   let submitted = false;
 
   // ── State ────────────────────────────────────────────────────
@@ -421,6 +413,7 @@
         w: null,
       }))
     );
+    third.w = null;
     submitted = false;
   }
 
@@ -437,6 +430,25 @@
       clearDown(r + 1, nm, childSlot);
       S[r + 1][nm][childSlot] = team;
     }
+    validateThird();
+    render();
+    refreshProgress();
+  }
+
+  // Third-place winner must be one of the two current semifinal losers.
+  // If a semifinal pick changed and invalidated it, drop it.
+  function validateThird() {
+    const losers = sfLosers();
+    if (third.w && !losers.includes(third.w)) third.w = null;
+  }
+
+  function pickThird(slot) {
+    if (submitted) return;
+    const [l1, l2] = sfLosers();
+    const team = slot === 1 ? l1 : l2;
+    if (!team) return;
+    if (third.w === team) return;
+    third.w = team;
     render();
     refreshProgress();
   }
@@ -463,6 +475,7 @@
   function refreshProgress() {
     let n = 0;
     S.forEach(r => r.forEach(m => { if (m.w) n++; }));
+    if (third.w) n++;
     const pct = Math.round(n / 32 * 100);
     document.getElementById('progText').textContent = `${n} of 32 picked`;
     document.getElementById('progFill').style.width  = pct + '%';
@@ -480,6 +493,16 @@
     const cls  = `team${won ? ' won' : ''}${lost ? ' lost' : ''}`;
     const dis  = lock ? ' disabled' : '';
     const cb   = lock ? '' : ` onclick="pick(${r},${m},${slot})"`;
+    return `<button class="${cls}"${dis}${cb}>${team}</button>`;
+  }
+
+  function thirdTeamBtn(team, slot) {
+    if (!team) return `<button class="team tbd" disabled>⚪ TBD</button>`;
+    const won  = third.w === team;
+    const lost = third.w && !won;
+    const cls  = `team${won ? ' won' : ''}${lost ? ' lost' : ''}`;
+    const dis  = submitted ? ' disabled' : '';
+    const cb   = submitted ? '' : ` onclick="pickThird(${slot})"`;
     return `<button class="${cls}"${dis}${cb}>${team}</button>`;
   }
 
@@ -515,9 +538,12 @@
 
         const [l1, l2] = sfLosers();
         if (l1 || l2) {
-          html += `<div class="third-section">`;
+          html += `<div class="third-block">`;
           html += `<div class="third-lbl">🥉 Third-Place Play-off</div>`;
-          html += `<div class="third-teams">${l1 || '⚪ TBD'}<span class="vs">vs</span>${l2 || '⚪ TBD'}</div>`;
+          html += `<div class="matches"><div class="card">`;
+          html += thirdTeamBtn(l1, 1);
+          html += thirdTeamBtn(l2, 2);
+          html += `</div></div>`;
           html += `</div>`;
         }
       } else {
@@ -548,16 +574,17 @@
 
     let picked = 0;
     S.forEach(r => r.forEach(m => { if (m.w) picked++; }));
+    if (third.w) picked++;
     if (picked < 32) {
       showToast(`${32 - picked} picks still missing`, 'error');
       return;
     }
+    if (!third.w) { showToast('Pick the third-place winner before submitting!', 'error'); return; }
 
-    const [l1, l2] = sfLosers();
     const payload = {
       name,
       champion: champ,
-      third_place: `${l1 || 'TBD'} vs ${l2 || 'TBD'}`,
+      third_place: third.w,
       r32:  S[0].map(m => m.w).join(', '),
       r16:  S[1].map(m => m.w).join(', '),
       qf:   S[2].map(m => m.w).join(', '),
