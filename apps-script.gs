@@ -56,9 +56,48 @@ function doPost(e) {
   }
 }
 
-// Lets you open the /exec URL in a browser to confirm it's live
-function doGet() {
+/**
+ * GET endpoint — returns every submitted bracket.
+ * Called by the "View Picks" tab via JSONP (?callback=...) to avoid CORS.
+ * Opening the URL plainly in a browser also returns the JSON.
+ */
+function doGet(e) {
+  var callback = e && e.parameter ? e.parameter.callback : null;
+  try {
+    var ss    = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName('Brackets') || ss.getSheets()[0];
+    var values = sheet.getDataRange().getValues();
+
+    var picks = [];
+    for (var i = 1; i < values.length; i++) {   // skip header row
+      var r = values[i];
+      if (!r[1] && !r[2]) continue;             // skip blank rows
+      picks.push({
+        timestamp:   r[0] ? new Date(r[0]).toISOString() : '',
+        name:        r[1],
+        champion:    r[2],
+        third_place: r[3],
+        r32:         r[4],
+        r16:         r[5],
+        qf:          r[6],
+        sf:          r[7]
+      });
+    }
+    return reply({ result: 'success', count: picks.length, picks: picks }, callback);
+  } catch (err) {
+    return reply({ result: 'error', error: String(err) }, callback);
+  }
+}
+
+// Wraps output as JSONP when a callback is given, otherwise plain JSON.
+function reply(obj, callback) {
+  var json = JSON.stringify(obj);
+  if (callback) {
+    return ContentService
+      .createTextOutput(callback + '(' + json + ')')
+      .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
   return ContentService
-    .createTextOutput(JSON.stringify({ status: 'SBS Majlis WC26 Predictor backend is running' }))
+    .createTextOutput(json)
     .setMimeType(ContentService.MimeType.JSON);
 }
