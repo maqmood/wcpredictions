@@ -188,6 +188,26 @@
     @media (hover: hover) { .team.lost:hover { opacity: 0.7; color: var(--white); } }
     .team.tbd { color: rgba(255,255,255,0.18); cursor: default; font-style: italic; }
     .team[disabled] { cursor: default; }
+    /* Locked (match kicked off) — override the .lost hover so it looks final */
+    .team.locked { cursor: default; }
+    .team.locked.lost { opacity: 0.28; }
+    @media (hover: hover) { .team.locked.lost:hover { opacity: 0.28; color: rgba(255,255,255,0.65); } }
+
+    /* Kicked-off match ribbon */
+    .card-locked { border-color: rgba(255,255,255,0.14); }
+    .lock-tag {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.42);
+      background: rgba(255,255,255,0.03);
+      padding: 0.32rem 0.7rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
 
     /* ── Champion ── */
     .champ-section {
@@ -529,6 +549,49 @@
 
   const ROUND_NAMES = ['Round of 32', 'Round of 16', 'Quarterfinals', 'Semifinals', 'Final'];
   const ROUND_SIZES = [16, 8, 4, 2, 1];
+  const ROUND_KEYS  = ['r32', 'r16', 'qf', 'sf', 'final'];
+
+  // ── MATCH SCHEDULE — edit as the tournament progresses ───────────
+  // For each match set:
+  //   ko     : kickoff time, ISO 8601 with offset e.g. '2026-06-28T16:00:00-04:00'.
+  //            Once the current time passes `ko`, the match LOCKS — it greys out
+  //            and can no longer be picked by anyone who hasn't picked it yet.
+  //   result : the actual winner. Paste the EXACT team label (incl. flag) from the
+  //            TEAMS list above. This auto-fills the pick and advances the real
+  //            team into the next round. Leave null until the match is decided.
+  // Leave ko:null to keep a match open (nothing locks until you set a time).
+  // r32 order matches the TEAMS list above (0 = South Africa/Canada, …).
+  const SCHEDULE = {
+    r32: [
+      { ko: null, result: null }, // 0  South Africa vs Canada
+      { ko: null, result: null }, // 1  Netherlands vs Morocco
+      { ko: null, result: null }, // 2  Germany vs Paraguay
+      { ko: null, result: null }, // 3  France vs Sweden
+      { ko: null, result: null }, // 4  Belgium vs Senegal
+      { ko: null, result: null }, // 5  United States vs Bosnia
+      { ko: null, result: null }, // 6  Spain vs Austria
+      { ko: null, result: null }, // 7  Portugal vs Croatia
+      { ko: null, result: null }, // 8  Brazil vs Japan
+      { ko: null, result: null }, // 9  Ivory Coast vs Norway
+      { ko: null, result: null }, // 10 Mexico vs Ecuador
+      { ko: null, result: null }, // 11 England vs DR Congo
+      { ko: null, result: null }, // 12 Switzerland vs Algeria
+      { ko: null, result: null }, // 13 Colombia vs Ghana
+      { ko: null, result: null }, // 14 Australia vs Egypt
+      { ko: null, result: null }, // 15 Argentina vs Cape Verde
+    ],
+    r16:   Array.from({ length: 8 }, () => ({ ko: null, result: null })),
+    qf:    Array.from({ length: 4 }, () => ({ ko: null, result: null })),
+    sf:    Array.from({ length: 2 }, () => ({ ko: null, result: null })),
+    final: [ { ko: null, result: null } ],
+    third: { ko: null, result: null },
+  };
+
+  const nowMs = () => Date.now();
+  const slotSched  = (r, m) => SCHEDULE[ROUND_KEYS[r]][m];
+  const isLocked   = (r, m) => { const k = slotSched(r, m).ko; return !!k && nowMs() >= new Date(k).getTime(); };
+  const getResult  = (r, m) => slotSched(r, m).result;
+  const isThirdLocked = () => { const k = SCHEDULE.third.ko; return !!k && nowMs() >= new Date(k).getTime(); };
 
   let S = [];
   let third = { w: null };   // third-place play-off winner (the 32nd pick)
@@ -548,12 +611,10 @@
     submitted = false;
   }
 
-  function pick(r, m, slot) {
-    if (submitted) return;
-    const team = slot === 1 ? S[r][m].t1 : S[r][m].t2;
-    if (!team) return;                 // can't pick an empty/TBD slot
-    if (S[r][m].w === team) return;     // already the winner, no-op
-
+  // Sets a winner and pushes it into the next round, clearing any now-invalid
+  // downstream picks. Shared by user picks and auto-applied real results.
+  function setWinner(r, m, team) {
+    if (!team || S[r][m].w === team) return;
     S[r][m].w = team;
     if (r < 4) {
       const nm        = Math.floor(m / 2);
@@ -561,9 +622,32 @@
       clearDown(r + 1, nm, childSlot);
       S[r + 1][nm][childSlot] = team;
     }
+  }
+
+  function pick(r, m, slot) {
+    if (submitted) return;
+    if (isLocked(r, m)) return;         // match has kicked off — locked
+    const team = slot === 1 ? S[r][m].t1 : S[r][m].t2;
+    if (!team) return;                  // can't pick an empty/TBD slot
+    setWinner(r, m, team);
     validateThird();
     render();
     refreshProgress();
+  }
+
+  // Force real results onto any match that has kicked off. Runs in round order
+  // so an earlier result advances the real team before the next round resolves.
+  function applyResults() {
+    for (let r = 0; r <= 4; r++) {
+      for (let m = 0; m < S[r].length; m++) {
+        if (isLocked(r, m)) {
+          const res = getResult(r, m);
+          if (res) setWinner(r, m, res);
+        }
+      }
+    }
+    if (isThirdLocked() && SCHEDULE.third.result) third.w = SCHEDULE.third.result;
+    validateThird();
   }
 
   // Third-place winner must be one of the two current semifinal losers.
@@ -575,6 +659,7 @@
 
   function pickThird(slot) {
     if (submitted) return;
+    if (isThirdLocked()) return;        // third-place match has kicked off
     const [l1, l2] = sfLosers();
     const team = slot === 1 ? l1 : l2;
     if (!team) return;
@@ -618,23 +703,32 @@
 
   function teamBtn(r, m, slot, team, winner) {
     if (!team) return `<button class="team tbd" disabled>⚪ TBD</button>`;
-    const won  = winner === team;
-    const lost = winner && !won;
-    const lock = submitted;  // only lock after submitting — losers stay clickable so picks can change
-    const cls  = `team${won ? ' won' : ''}${lost ? ' lost' : ''}`;
-    const dis  = lock ? ' disabled' : '';
-    const cb   = lock ? '' : ` onclick="pick(${r},${m},${slot})"`;
+    const won    = winner === team;
+    const lost   = winner && !won;
+    const locked = isLocked(r, m);
+    const lock   = submitted || locked;  // locked once submitted OR the match kicked off
+    const cls    = `team${won ? ' won' : ''}${lost ? ' lost' : ''}${locked ? ' locked' : ''}`;
+    const dis    = lock ? ' disabled' : '';
+    const cb     = lock ? '' : ` onclick="pick(${r},${m},${slot})"`;
     return `<button class="${cls}"${dis}${cb}>${team}</button>`;
   }
 
   function thirdTeamBtn(team, slot) {
     if (!team) return `<button class="team tbd" disabled>⚪ TBD</button>`;
-    const won  = third.w === team;
-    const lost = third.w && !won;
-    const cls  = `team${won ? ' won' : ''}${lost ? ' lost' : ''}`;
-    const dis  = submitted ? ' disabled' : '';
-    const cb   = submitted ? '' : ` onclick="pickThird(${slot})"`;
+    const won    = third.w === team;
+    const lost   = third.w && !won;
+    const locked = isThirdLocked();
+    const lock   = submitted || locked;
+    const cls    = `team${won ? ' won' : ''}${lost ? ' lost' : ''}${locked ? ' locked' : ''}`;
+    const dis    = lock ? ' disabled' : '';
+    const cb     = lock ? '' : ` onclick="pickThird(${slot})"`;
     return `<button class="${cls}"${dis}${cb}>${team}</button>`;
+  }
+
+  // Small ribbon shown on a match card once it has kicked off.
+  function lockTag(locked, hasResult) {
+    if (!locked) return '';
+    return `<div class="lock-tag">🔒 ${hasResult ? 'Full time · result locked' : 'Kicked off · locked'}</div>`;
   }
 
   function render() {
@@ -654,7 +748,9 @@
       html += `</div>`;
 
       if (r === 4) {
-        html += `<div class="matches"><div class="card">`;
+        const fLock = isLocked(4, 0);
+        html += `<div class="matches"><div class="card${fLock ? ' card-locked' : ''}">`;
+        html += lockTag(fLock, !!getResult(4, 0));
         html += teamBtn(4, 0, 1, S[4][0].t1, S[4][0].w);
         html += teamBtn(4, 0, 2, S[4][0].t2, S[4][0].w);
         html += `</div></div>`;
@@ -669,9 +765,11 @@
 
         const [l1, l2] = sfLosers();
         if (l1 || l2) {
+          const tLock = isThirdLocked();
           html += `<div class="third-block">`;
           html += `<div class="third-lbl">🥉 Third-Place Play-off</div>`;
-          html += `<div class="matches"><div class="card">`;
+          html += `<div class="matches"><div class="card${tLock ? ' card-locked' : ''}">`;
+          html += lockTag(tLock, !!SCHEDULE.third.result);
           html += thirdTeamBtn(l1, 1);
           html += thirdTeamBtn(l2, 2);
           html += `</div></div>`;
@@ -680,7 +778,9 @@
       } else {
         html += `<div class="matches">`;
         round.forEach((match, mi) => {
-          html += `<div class="card">`;
+          const mLock = isLocked(r, mi);
+          html += `<div class="card${mLock ? ' card-locked' : ''}">`;
+          html += lockTag(mLock, !!getResult(r, mi));
           html += teamBtn(r, mi, 1, match.t1, match.w);
           html += teamBtn(r, mi, 2, match.t2, match.w);
           html += `</div>`;
@@ -759,6 +859,7 @@
     btn.disabled = false;
     btn.innerHTML = '📨 Submit my bracket';
     init();
+    applyResults();   // keep real results for matches that already kicked off
     render();
     refreshProgress();
   }
@@ -880,7 +981,17 @@
 
   // ── Boot ─────────────────────────────────────────────────────
   init();
+  applyResults();
   render();
+  refreshProgress();
+
+  // Re-check kickoff times every 30s so matches lock live while the page is open.
+  setInterval(() => {
+    if (submitted) return;
+    applyResults();
+    render();
+    refreshProgress();
+  }, 30000);
 </script>
 </body>
 </html>
