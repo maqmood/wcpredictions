@@ -623,15 +623,14 @@
   const ROUND_SIZES = [16, 8, 4, 2, 1];
   const ROUND_KEYS  = ['r32', 'r16', 'qf', 'sf', 'final'];
 
-  // ── MATCH SCHEDULE — edit as the tournament progresses ───────────
-  // For each match set:
-  //   ko     : kickoff time, ISO 8601 with offset e.g. '2026-06-28T16:00:00-04:00'.
-  //            Once the current time passes `ko`, the match LOCKS — it greys out
-  //            and can no longer be picked by anyone who hasn't picked it yet.
-  //   result : the actual winner. Paste the EXACT team label (incl. flag) from the
-  //            TEAMS list above. This auto-fills the pick and advances the real
-  //            team into the next round. Leave null until the match is decided.
-  // Leave ko:null to keep a match open (nothing locks until you set a time).
+  // ── MATCH SCHEDULE ───────────────────────────────────────────────
+  // Kickoff times (`ko`) and results (`result`) are normally sourced automatically
+  // by the backend from football-data.org once a day at 06:00 GST, then applied
+  // over these values on load (see applyFixtures). You can still hard-code a slot
+  // here as a manual override/fallback:
+  //   ko     : ISO 8601 kickoff. Once now passes it, the match LOCKS (greys out).
+  //   result : exact winner label (incl. flag) — auto-fills & advances that team.
+  // Leave both null to defer entirely to the backend feed.
   // r32 order matches the TEAMS list above (0 = South Africa/Canada, …).
   const SCHEDULE = {
     r32: [
@@ -768,7 +767,6 @@
     document.getElementById('progText').textContent = `${n} of 32 picked`;
     document.getElementById('progFill').style.width  = pct + '%';
     document.getElementById('progPct').textContent   = pct + '%';
-    document.getElementById('badge').style.display   = n === 32 ? 'inline-block' : 'none';
   }
 
   // ── Render ───────────────────────────────────────────────────
@@ -1081,7 +1079,27 @@
     body.innerHTML = rank + sections;
   }
 
-  // Fetch all submissions via JSONP (a <script> tag) to dodge CORS entirely.
+  // Overlay backend-sourced kickoffs + results onto SCHEDULE. The backend pulls
+  // these from football-data.org once a day (06:00 GST); the browser never sees
+  // the API key. Missing fields simply leave that slot open.
+  function applyFixtures(fx) {
+    const put = (target, slot) => {
+      if (!target || !slot) return;
+      target.ko     = slot.ko || null;
+      target.result = slot.result || null;
+    };
+    const putRound = (arr, key) => {
+      if (Array.isArray(fx[key])) fx[key].forEach((slot, i) => put(arr[i], slot));
+    };
+    putRound(SCHEDULE.r32, 'r32');
+    putRound(SCHEDULE.r16, 'r16');
+    putRound(SCHEDULE.qf,  'qf');
+    putRound(SCHEDULE.sf,  'sf');
+    if (Array.isArray(fx.final)) put(SCHEDULE.final[0], fx.final[0]);
+    if (fx.third) put(SCHEDULE.third, fx.third);
+  }
+
+  // Fetch all submissions + fixtures via JSONP (a <script> tag) to dodge CORS.
   function loadLeaderboard() {
     const body = document.getElementById('lbBody');
     const info = document.getElementById('lbInfo');
@@ -1112,6 +1130,10 @@
     window[cb] = (data) => {
       done = true;
       cleanup();
+      if (data && data.fixtures) {
+        applyFixtures(data.fixtures);   // kickoffs + results sourced daily by the backend
+        applyResults(); render(); refreshProgress();
+      }
       renderLeaderboard((data && data.picks) || []);
     };
     script.onerror = () => fail("Couldn't load leaderboard. Tap Refresh to retry.");
