@@ -350,41 +350,172 @@
       font-weight: 700;
     }
 
-    /* ── Tabs ── */
-    .tabs {
+    /* ── Title row + add button ── */
+    .title-row {
       display: flex;
-      gap: 0.4rem;
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(0,132,209,0.2);
-      border-radius: 10px;
-      padding: 0.3rem;
-      margin: 1.4rem 0 1.6rem;
+      align-items: center;
+      justify-content: center;
+      gap: 0.7rem;
     }
-    .tab {
-      flex: 1;
-      padding: 0.6rem 0.5rem;
+    .add-btn {
+      flex-shrink: 0;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
       border: none;
-      border-radius: 7px;
-      background: transparent;
-      color: rgba(255,255,255,0.55);
-      font-family: inherit;
-      font-size: 0.85rem;
-      font-weight: 700;
+      background: var(--malibu);
+      color: #fff;
+      font-size: 1.5rem;
+      font-weight: 400;
+      line-height: 1;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: var(--glow-sm);
+      transition: var(--ease);
+      -webkit-tap-highlight-color: transparent;
+    }
+    .add-btn:active { transform: scale(0.92); }
+    @media (hover: hover) { .add-btn:hover { background: var(--aquarius); box-shadow: var(--glow); } }
+
+    /* ── Make Pick overlay ── */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: var(--navy);
+      display: none;
+      flex-direction: column;
+    }
+    .overlay.open { display: flex; }
+    .overlay-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1rem 1.1rem;
+      border-bottom: 1px solid rgba(0,132,209,0.2);
+      background: var(--navy2);
+      flex-shrink: 0;
+    }
+    .overlay-title { font-size: 1rem; font-weight: 800; letter-spacing: 0.03em; }
+    .overlay-close {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.06);
+      color: var(--white);
+      font-size: 1.4rem;
+      line-height: 1;
       cursor: pointer;
       transition: var(--ease);
       -webkit-tap-highlight-color: transparent;
     }
-    .tab.active { background: var(--malibu); color: #fff; box-shadow: var(--glow-sm); }
-    @media (hover: hover) { .tab:not(.active):hover { color: var(--white); background: rgba(0,132,209,0.12); } }
+    .overlay-close:active { background: rgba(255,255,255,0.16); }
+    @media (hover: hover) { .overlay-close:hover { background: rgba(255,255,255,0.16); } }
+    .overlay-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.2rem 1rem 3rem;
+      max-width: 480px;
+      width: 100%;
+      margin: 0 auto;
+    }
 
-    /* ── Picks list ── */
-    .picks-toolbar {
+    /* ── Leaderboard ── */
+    .lb-toolbar {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 1rem;
+      margin: 1.4rem 0 1.1rem;
     }
-    .picks-count { font-size: 0.8rem; color: var(--dawn); }
+    .lb-info { font-size: 0.8rem; color: var(--dawn); }
+
+    .lb-empty, .lb-loading {
+      text-align: center;
+      color: rgba(255,255,255,0.4);
+      font-size: 0.85rem;
+      padding: 2.5rem 1rem;
+      line-height: 1.6;
+    }
+
+    /* Overall ranking */
+    .rank-card {
+      background: rgba(255,215,0,0.06);
+      border: 1px solid rgba(255,215,0,0.28);
+      border-radius: 12px;
+      padding: 0.9rem 1rem;
+      margin-bottom: 1.6rem;
+    }
+    .rank-title {
+      font-size: 0.64rem;
+      font-weight: 800;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 0.7rem;
+    }
+    .rank-row {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      padding: 0.4rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    .rank-row:last-child { border-bottom: none; }
+    .rank-pos { font-size: 0.85rem; font-weight: 800; color: var(--gold); min-width: 1.6rem; }
+    .rank-name { font-size: 0.9rem; font-weight: 600; color: var(--white); flex: 1; }
+    .rank-score { font-size: 0.82rem; font-weight: 700; color: var(--aquarius); }
+
+    /* Per-round → per-match breakdown */
+    .lb-round { margin-bottom: 1.6rem; }
+    .lb-round-name {
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--malibu);
+      margin-bottom: 0.7rem;
+    }
+    .lb-match {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(0,132,209,0.2);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      margin-bottom: 0.6rem;
+    }
+    .lb-match-teams { font-size: 0.72rem; color: rgba(255,255,255,0.4); margin-bottom: 0.35rem; }
+    .lb-match-winner {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--aquarius);
+      margin-bottom: 0.6rem;
+    }
+    .lb-correct-label {
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 0.35rem;
+    }
+    .lb-names { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+    .lb-chip {
+      background: rgba(0,200,100,0.1);
+      border: 1px solid rgba(0,200,100,0.3);
+      color: #7ee0a8;
+      border-radius: 20px;
+      padding: 0.2rem 0.65rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .lb-none { font-size: 0.78rem; color: rgba(255,255,255,0.3); font-style: italic; }
+
+    /* Refresh button (leaderboard) */
     .btn-refresh {
       background: rgba(0,132,209,0.12);
       border: 1px solid rgba(0,132,209,0.35);
@@ -400,85 +531,41 @@
     }
     .btn-refresh:active { background: rgba(0,132,209,0.25); }
     @media (hover: hover) { .btn-refresh:hover { background: rgba(0,132,209,0.22); } }
-
-    .picks-list { display: flex; flex-direction: column; gap: 0.7rem; }
-
-    .pick-card {
-      background: rgba(255,255,255,0.04);
-      border: 1px solid rgba(0,132,209,0.2);
-      border-radius: 10px;
-      overflow: hidden;
-      transition: var(--ease);
-    }
-    .pick-head {
-      display: flex;
-      align-items: center;
-      gap: 0.7rem;
-      width: 100%;
-      padding: 0.85rem 1rem;
-      background: transparent;
-      border: none;
-      color: var(--white);
-      font-family: inherit;
-      cursor: pointer;
-      text-align: left;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .pick-name { font-size: 0.95rem; font-weight: 700; flex-shrink: 0; }
-    .pick-champ {
-      margin-left: auto;
-      font-size: 0.82rem;
-      font-weight: 600;
-      color: var(--gold);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .pick-caret { color: rgba(255,255,255,0.4); font-size: 0.75rem; flex-shrink: 0; transition: var(--ease); }
-    .pick-card.open .pick-caret { transform: rotate(180deg); }
-
-    .pick-body {
-      display: none;
-      padding: 0 1rem 1rem;
-      border-top: 1px solid rgba(0,132,209,0.13);
-    }
-    .pick-card.open .pick-body { display: block; }
-    .pick-row { padding: 0.55rem 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .pick-row:last-child { border-bottom: none; }
-    .pick-row-label {
-      font-size: 0.6rem;
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--malibu);
-      margin-bottom: 0.25rem;
-    }
-    .pick-row-val { font-size: 0.8rem; color: var(--dawn); line-height: 1.55; }
-    .pick-meta { font-size: 0.68rem; color: rgba(255,255,255,0.3); margin-top: 0.6rem; }
-
-    .picks-empty, .picks-loading {
-      text-align: center;
-      color: rgba(255,255,255,0.4);
-      font-size: 0.85rem;
-      padding: 2.5rem 1rem;
-    }
   </style>
 </head>
 <body>
 <div class="page">
 
   <header>
-    <h1>SBS MAJLIS <em>WC26</em> PREDICTOR</h1>
-    <div class="subtitle">World Cup Knockout Bracket</div>
+    <div class="title-row">
+      <h1>SBS MAJLIS <em>WC26</em> PREDICTOR</h1>
+      <button class="add-btn" id="addBtn" onclick="openPredict()" title="Make your picks" aria-label="Make your picks">+</button>
+    </div>
+    <div class="subtitle">Leaderboard · World Cup Knockout</div>
   </header>
 
-  <div class="tabs">
-    <button class="tab active" id="tabPredict" onclick="switchTab('predict')">🗳️ Make Pick</button>
-    <button class="tab" id="tabPicks" onclick="switchTab('picks')">👥 View Picks</button>
+  <!-- ── Leaderboard (main view) ── -->
+  <div id="leaderboard">
+    <div class="lb-toolbar">
+      <span class="lb-info" id="lbInfo">Loading…</span>
+      <button class="btn-refresh" id="lbRefresh" onclick="loadLeaderboard()">↻ Refresh</button>
+    </div>
+    <div id="lbBody"></div>
   </div>
 
-  <!-- ── Make Pick tab ── -->
-  <div id="predictTab">
+  <footer>
+    SBS Majlis · World Cup 2026 🇨🇦🇺🇸🇲🇽
+  </footer>
+
+</div>
+
+<!-- ── Make Pick overlay ── -->
+<div class="overlay" id="predictOverlay">
+  <div class="overlay-head">
+    <span class="overlay-title">🗳️ Make your picks</span>
+    <button class="overlay-close" onclick="closePredict()" aria-label="Close">×</button>
+  </div>
+  <div class="overlay-body">
     <div class="name-wrap">
       <label class="field-label" for="nameInput">Your Name</label>
       <input type="text" id="nameInput" placeholder="Enter your name" maxlength="40" autocomplete="off">
@@ -502,21 +589,6 @@
       <button class="btn btn-ghost" onclick="resetAll()">↺ Reset all picks</button>
     </div>
   </div>
-
-  <!-- ── View Picks tab ── -->
-  <div id="picksTab" style="display:none">
-    <div class="picks-toolbar">
-      <span class="picks-count" id="picksCount">Loading…</span>
-      <button class="btn-refresh" id="refreshBtn" onclick="loadPicks()">↻ Refresh</button>
-    </div>
-    <div class="picks-list" id="picksList"></div>
-  </div>
-
-  <footer>
-    SBS Majlis · World Cup 2026 🇨🇦🇺🇸🇲🇽<br>
-    <div class="badge" id="badge" style="display:none">✅ Bracket complete!</div>
-  </footer>
-
 </div>
 
 <!-- Toast -->
@@ -844,6 +916,8 @@
       document.getElementById('submittedBanner').style.display = 'block';
       showToast('🎉 Bracket submitted successfully!', 'success');
       render(); // lock all buttons
+      // Close the overlay shortly after and refresh the leaderboard with the new entry
+      setTimeout(() => { closePredict(); loadLeaderboard(); }, 1400);
     } catch (err) {
       btn.disabled = false;
       btn.innerHTML = '📨 Submit my bracket';
@@ -875,17 +949,15 @@
     toastTimer = setTimeout(() => { el.className = `toast${type ? ' ' + type : ''}`; }, 3200);
   }
 
-  // ── Tabs & viewing picks ─────────────────────────────────────
+  // ── Make Pick overlay ────────────────────────────────────────
 
-  let picksLoaded = false;
-
-  function switchTab(which) {
-    const predict = which === 'predict';
-    document.getElementById('predictTab').style.display = predict ? 'block' : 'none';
-    document.getElementById('picksTab').style.display   = predict ? 'none'  : 'block';
-    document.getElementById('tabPredict').classList.toggle('active', predict);
-    document.getElementById('tabPicks').classList.toggle('active', !predict);
-    if (!predict && !picksLoaded) loadPicks();
+  function openPredict() {
+    document.getElementById('predictOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closePredict() {
+    document.getElementById('predictOverlay').classList.remove('open');
+    document.body.style.overflow = '';
   }
 
   function esc(s) {
@@ -893,16 +965,132 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
+  // ── Leaderboard ──────────────────────────────────────────────
+
+  // Build the OFFICIAL bracket purely from entered results (ignores user picks),
+  // so we know each match's real competitors and winner.
+  function officialResults() {
+    const O = ROUND_SIZES.map((n, r) => Array.from({ length: n }, (_, m) => ({
+      t1: r === 0 ? TEAMS[m][0] : null,
+      t2: r === 0 ? TEAMS[m][1] : null,
+      w: null,
+    })));
+    const setW = (r, m, team) => {
+      if (!team) return;
+      O[r][m].w = team;
+      if (r < 4) {
+        const nm = Math.floor(m / 2), slot = m % 2 === 0 ? 't1' : 't2';
+        O[r + 1][nm][slot] = team;
+      }
+    };
+    for (let r = 0; r <= 4; r++) {
+      for (let m = 0; m < O[r].length; m++) {
+        const res = r === 4 ? SCHEDULE.final[0].result : SCHEDULE[ROUND_KEYS[r]][m].result;
+        if (res) setW(r, m, res);
+      }
+    }
+    return O;
+  }
+
+  const norm = s => (s == null ? '' : String(s)).trim();
+
+  // The winner a person advanced from round r, match m.
+  function personPick(p, r, m) {
+    if (r === 4) return norm(p.champion);
+    const field = ['r32', 'r16', 'qf', 'sf'][r];
+    const arr = norm(p[field]).split(/,\s*/);
+    return norm(arr[m]);
+  }
+
+  function matchBlock(t1, t2, winner, correct) {
+    const teams = (t1 && t2) ? `<div class="lb-match-teams">${esc(t1)} &nbsp;vs&nbsp; ${esc(t2)}</div>` : '';
+    const chips = correct.length
+      ? `<div class="lb-names">${correct.map(n => `<span class="lb-chip">${esc(n)}</span>`).join('')}</div>`
+      : `<div class="lb-none">Nobody picked this one</div>`;
+    return `<div class="lb-match">
+      ${teams}
+      <div class="lb-match-winner">✅ ${esc(winner)}</div>
+      <div class="lb-correct-label">${correct.length} correct</div>
+      ${chips}
+    </div>`;
+  }
+
+  function renderLeaderboard(picks) {
+    const body = document.getElementById('lbBody');
+    const info = document.getElementById('lbInfo');
+    info.textContent = `${picks.length} bracket${picks.length === 1 ? '' : 's'}`;
+
+    if (!picks.length) {
+      body.innerHTML = `<div class="lb-empty">No brackets submitted yet.<br>Tap the <strong>+</strong> button up top to add yours.</div>`;
+      return;
+    }
+
+    const O = officialResults();
+    const scores = {};
+    picks.forEach(p => { scores[p.name || 'Anonymous'] = 0; });
+
+    let sections = '';
+    let anyDecided = false;
+
+    for (let r = 0; r <= 4; r++) {
+      let matches = '';
+      for (let m = 0; m < O[r].length; m++) {
+        const winner = norm(O[r][m].w);
+        if (!winner) continue;
+        anyDecided = true;
+        const correct = [];
+        picks.forEach(p => {
+          if (personPick(p, r, m) === winner) {
+            const nm = p.name || 'Anonymous';
+            correct.push(nm);
+            scores[nm]++;
+          }
+        });
+        matches += matchBlock(O[r][m].t1, O[r][m].t2, winner, correct);
+      }
+      if (matches) sections += `<div class="lb-round"><div class="lb-round-name">${ROUND_NAMES[r]}</div>${matches}</div>`;
+    }
+
+    const thirdWinner = norm(SCHEDULE.third.result);
+    if (thirdWinner) {
+      anyDecided = true;
+      const correct = [];
+      picks.forEach(p => {
+        if (norm(p.third_place) === thirdWinner) {
+          const nm = p.name || 'Anonymous';
+          correct.push(nm);
+          scores[nm]++;
+        }
+      });
+      sections += `<div class="lb-round"><div class="lb-round-name">Third-Place Play-off</div>${matchBlock(null, null, thirdWinner, correct)}</div>`;
+    }
+
+    if (!anyDecided) {
+      body.innerHTML = `<div class="lb-empty">No match results in yet.<br>Winners &amp; correct guesses appear here as results are recorded.</div>`;
+      return;
+    }
+
+    const ranked = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+    const medal = i => (i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}`);
+    let rank = `<div class="rank-card"><div class="rank-title">🏆 Overall Ranking</div>`;
+    ranked.forEach(([name, score], i) => {
+      rank += `<div class="rank-row"><span class="rank-pos">${medal(i)}</span><span class="rank-name">${esc(name)}</span><span class="rank-score">${score} correct</span></div>`;
+    });
+    rank += `</div>`;
+
+    body.innerHTML = rank + sections;
+  }
+
   // Fetch all submissions via JSONP (a <script> tag) to dodge CORS entirely.
-  function loadPicks() {
-    const list  = document.getElementById('picksList');
-    const count = document.getElementById('picksCount');
-    count.textContent = 'Loading…';
-    list.innerHTML = `<div class="picks-loading">Loading picks…</div>`;
+  function loadLeaderboard() {
+    const body = document.getElementById('lbBody');
+    const info = document.getElementById('lbInfo');
+    info.textContent = 'Loading…';
+    body.innerHTML = `<div class="lb-loading">Loading leaderboard…</div>`;
 
     if (!SHEET_URL || SHEET_URL.startsWith('PASTE_')) {
-      count.textContent = '';
-      list.innerHTML = `<div class="picks-empty">Backend not configured yet.</div>`;
+      info.textContent = '';
+      body.innerHTML = `<div class="lb-empty">Backend not configured yet.</div>`;
       return;
     }
 
@@ -914,69 +1102,23 @@
       delete window[cb];
       if (script.parentNode) script.parentNode.removeChild(script);
     };
+    const fail = msg => {
+      if (done) return;
+      cleanup();
+      info.textContent = '';
+      body.innerHTML = `<div class="lb-empty">${msg}</div>`;
+    };
 
     window[cb] = (data) => {
       done = true;
-      picksLoaded = true;
       cleanup();
-      renderPicks((data && data.picks) || []);
+      renderLeaderboard((data && data.picks) || []);
     };
-
-    script.onerror = () => {
-      if (done) return;
-      cleanup();
-      count.textContent = '';
-      list.innerHTML = `<div class="picks-empty">Couldn't load picks. Tap Refresh to retry.</div>`;
-    };
-
-    // Timeout guard in case the callback never fires
-    setTimeout(() => {
-      if (done) return;
-      cleanup();
-      count.textContent = '';
-      list.innerHTML = `<div class="picks-empty">Request timed out. Tap Refresh to retry.</div>`;
-    }, 12000);
+    script.onerror = () => fail("Couldn't load leaderboard. Tap Refresh to retry.");
+    setTimeout(() => fail('Request timed out. Tap Refresh to retry.'), 12000);
 
     script.src = SHEET_URL + '?callback=' + cb + '&t=' + Date.now();
     document.body.appendChild(script);
-  }
-
-  function renderPicks(picks) {
-    const list  = document.getElementById('picksList');
-    const count = document.getElementById('picksCount');
-
-    if (!picks.length) {
-      count.textContent = 'No picks yet';
-      list.innerHTML = `<div class="picks-empty">No brackets submitted yet — be the first!</div>`;
-      return;
-    }
-
-    // Newest first
-    picks = picks.slice().reverse();
-    count.textContent = `${picks.length} bracket${picks.length === 1 ? '' : 's'} submitted`;
-
-    list.innerHTML = picks.map(p => {
-      const when = p.timestamp ? new Date(p.timestamp).toLocaleString() : '';
-      const row = (label, val) =>
-        `<div class="pick-row"><div class="pick-row-label">${label}</div><div class="pick-row-val">${esc(val) || '—'}</div></div>`;
-      return `
-        <div class="pick-card">
-          <button class="pick-head" onclick="this.parentNode.classList.toggle('open')">
-            <span class="pick-name">${esc(p.name) || 'Anonymous'}</span>
-            <span class="pick-champ">🏆 ${esc(p.champion) || '—'}</span>
-            <span class="pick-caret">▼</span>
-          </button>
-          <div class="pick-body">
-            ${row('🏆 Champion', p.champion)}
-            ${row('🥉 Third Place', p.third_place)}
-            ${row('Semifinals', p.sf)}
-            ${row('Quarterfinals', p.qf)}
-            ${row('Round of 16', p.r16)}
-            ${row('Round of 32', p.r32)}
-            ${when ? `<div class="pick-meta">Submitted ${esc(when)}</div>` : ''}
-          </div>
-        </div>`;
-    }).join('');
   }
 
   // ── Boot ─────────────────────────────────────────────────────
@@ -984,6 +1126,7 @@
   applyResults();
   render();
   refreshProgress();
+  loadLeaderboard();
 
   // Re-check kickoff times every 30s so matches lock live while the page is open.
   setInterval(() => {
